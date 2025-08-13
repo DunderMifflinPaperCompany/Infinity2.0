@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company }} - Infinity {{ version }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Arial:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>DUNDER MIFFLIN <span class="infinity">∞</span></h1>
+                <p class="tagline">Limitless Paper in a Paperless World™</p>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">HOME</a>
+                <a href="#products" class="nav-link">PRODUCTS</a>
+                <a href="#services" class="nav-link">SERVICES</a>
+                <a href="#about" class="nav-link">ABOUT</a>
+                <a href="#contact" class="nav-link">CONTACT</a>
+                <a href="#careers" class="nav-link">CAREERS</a>
+            </div>
+            <div class="version-badge">
+                <span class="version-text">INFINITY {{ version }}</span>
+                <div class="new-badge">NEW!</div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="hero-section">
+            <div class="hero-content">
+                <h2>Welcome to Infinity {{ version }}</h2>
+                <p class="hero-subtitle">The Most Revolutionary Paper Experience Ever Created</p>
+                <div class="upgrade-notice">
+                    <strong>🎉 MAJOR UPGRADE:</strong> Infinity {{ version }} fixes all known issues from v1.0 
+                    and introduces groundbreaking features you never knew you needed!
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <section class="main-section">
+                <div class="section-header">
+                    <h3>LATEST NEWS & UPDATES</h3>
+                    <span class="powered-by">Powered by Infinity {{ version }} News Engine</span>
+                </div>
+                
+                {% for item in news %}
+                <article class="news-item">
+                    <h4 class="news-title">{{ item.title }}</h4>
+                    <div class="news-meta">
+                        <span class="news-author">By {{ item.author }}</span>
+                        <span class="news-date">{{ item.date }}</span>
+                    </div>
+                    <p class="news-content">{{ item.content }}</p>
+                    <div class="news-tags">
+                        <span class="tag">Breaking</span>
+                        <span class="tag">Company Update</span>
+                    </div>
+                </article>
+                {% endfor %}
+
+                <div class="feature-spotlight">
+                    <h3>🚀 Infinity {{ version }} Features</h3>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">📱</div>
+                            <h4>Mobile-First Design</h4>
+                            <p>Fully responsive interface that works on BlackBerry, iPhone, and even flip phones!</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🤖</div>
+                            <h4>AI Paper Recommendations</h4>
+                            <p>Our advanced AI suggests the perfect paper for every occasion using machine learning.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">⛓️</div>
+                            <h4>Blockchain Supply Chain</h4>
+                            <p>Track your paper from tree to desk with our revolutionary blockchain technology.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">☁️</div>
+                            <h4>Cloud Integration</h4>
+                            <p>Access your paper orders from anywhere in the cloud (actual clouds not supported).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="sidebar">
+                <div class="employee-spotlight">
+                    <h3>EMPLOYEE SPOTLIGHT</h3>
+                    <div class="employee-grid">
+                        {% for employee in employees %}
+                        <div class="employee-card">
+                            <div class="employee-photo">
+                                <div class="photo-placeholder">📷</div>
+                            </div>
+                            <div class="employee-info">
+                                <h4>{{ employee.name }}</h4>
+                                <p class="employee-title">{{ employee.title }}</p>
+                                <p class="employee-dept">{{ employee.department }}</p>
+                                <p class="employee-years">{{ employee.years_service }} years of service</p>
+                                <blockquote class="employee-quote">"{{ employee.quote }}"</blockquote>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="quick-stats">
+                    <h3>INFINITY {{ version }} STATS</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number">400%</div>
+                            <div class="stat-label">More Efficient</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">73%</div>
+                            <div class="stat-label">Fewer Bugs</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">∞</div>
+                            <div class="stat-label">Possibilities</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">100%</div>
+                            <div class="stat-label">Paper Based</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-links">
+                    <h3>QUICK ACCESS</h3>
+                    <ul class="link-list">
+                        <li><a href="#orders">📋 Place New Order</a></li>
+                        <li><a href="#inventory">📦 Check Inventory</a></li>
+                        <li><a href="#support">🛠️ Technical Support</a></li>
+                        <li><a href="#training">🎓 Infinity {{ version }} Training</a></li>
+                        <li><a href="#feedback">💬 Send Feedback</a></li>
+                        <li><a href="#bug-report">🐛 Report Bug (Unlikely)</a></li>
+                    </ul>
+                </div>
+
+                <div class="testimonials">
+                    <h3>WHAT PEOPLE ARE SAYING</h3>
+                    <blockquote class="testimonial">
+                        "Infinity {{ version }} has revolutionized how we think about paper. It's like version 1.0, 
+                        but with more features and fewer problems!"
+                        <cite>- Corporate, probably</cite>
+                    </blockquote>
+                    <blockquote class="testimonial">
+                        "I don't understand what changed, but they told me it's better."
+                        <cite>- Stanley Hudson</cite>
+                    </blockquote>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Dunder Mifflin Paper Company</h4>
+                <p>Scranton, PA • Est. 1949</p>
+                <p>Infinity {{ version }} - The Future is Now</p>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <p>24/7 Customer Service*</p>
+                <p>*During business hours only</p>
+                <p>Email: help@dundermifflin.com</p>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <p>© 2024 Dunder Mifflin Paper Company</p>
+                <p>All rights reserved. Paper not included.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
