@@ -91,6 +91,44 @@
             </section>
 
             <aside class="sidebar">
+                {% if chat_enabled %}
+                <div class="chat-widget">
+                    <h3>💬 CHAT WITH SALES</h3>
+                    <div class="chat-container" id="chatContainer">
+                        <div class="chat-header">
+                            <span>Choose Your Office Location</span>
+                        </div>
+                        <div class="office-selector" id="officeSelector">
+                            <label for="office-select" class="sr-only">Select Office Location</label>
+                            <select id="office-select" class="office-select" aria-label="Select office location">
+                                <option value="">Select an office...</option>
+                                {% for office in offices %}
+                                <option value="{{ office.id }}">{{ office.name }} - {{ office.location }}</option>
+                                {% endfor %}
+                            </select>
+                            <button id="start-chat" class="chat-button" disabled aria-label="Start chat with selected office">
+                                🚀 Start Chat
+                            </button>
+                        </div>
+                        <div class="chat-status" id="chatStatus" style="display: none;">
+                            <div class="status-indicator"></div>
+                            <span class="status-text"></span>
+                        </div>
+                        <div class="chat-messages" id="chatMessages" style="display: none;">
+                            <div class="chat-intro">
+                                <p>Welcome to Dunder Mifflin chat support! You'll be connected with one of our amazing sales representatives.</p>
+                            </div>
+                        </div>
+                        <div class="chat-input-area" id="chatInputArea" style="display: none;">
+                            <label for="chat-input" class="sr-only">Type your message</label>
+                            <input type="text" id="chat-input" placeholder="Type your message..." aria-label="Chat message input">
+                            <button id="send-message" aria-label="Send message">Send</button>
+                            <button id="end-chat" class="end-chat-btn" aria-label="End chat session">End Chat</button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="employee-spotlight">
                     <h3>EMPLOYEE SPOTLIGHT</h3>
                     <div class="employee-grid">
@@ -181,5 +219,153 @@
             </div>
         </div>
     </footer>
+
+    {% if chat_enabled %}
+    <script>
+        // Chat functionality
+        let currentSessionId = null;
+        let chatPollingInterval = null;
+
+        const officeSelect = document.getElementById('office-select');
+        const startChatBtn = document.getElementById('start-chat');
+        const chatStatus = document.getElementById('chatStatus');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInputArea = document.getElementById('chatInputArea');
+        const endChatBtn = document.getElementById('end-chat');
+
+        // Enable start button when office is selected
+        officeSelect.addEventListener('change', function() {
+            startChatBtn.disabled = !this.value;
+        });
+
+        // Start chat
+        startChatBtn.addEventListener('click', async function() {
+            const officeId = officeSelect.value;
+            if (!officeId) return;
+
+            try {
+                const response = await fetch('/api/chat/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        office_id: officeId,
+                        customer_name: null
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    currentSessionId = result.session_id;
+                    
+                    // Show status
+                    chatStatus.style.display = 'block';
+                    const statusText = chatStatus.querySelector('.status-text');
+                    const statusIndicator = chatStatus.querySelector('.status-indicator');
+                    
+                    statusText.textContent = result.message;
+                    
+                    if (result.status === 'connected') {
+                        statusIndicator.className = 'status-indicator connected';
+                        showChatInterface(result.salesperson);
+                    } else if (result.status === 'waiting') {
+                        statusIndicator.className = 'status-indicator waiting';
+                        // Could implement polling here for queue updates
+                    }
+                    
+                    // Hide office selector
+                    document.getElementById('officeSelector').style.display = 'none';
+                    
+                } else {
+                    alert('Failed to start chat. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error starting chat:', error);
+                alert('Error starting chat. Please try again.');
+            }
+        });
+
+        // Show chat interface
+        function showChatInterface(salesperson) {
+            chatMessages.style.display = 'block';
+            chatInputArea.style.display = 'flex';
+            
+            if (salesperson) {
+                const welcomeMsg = document.createElement('div');
+                welcomeMsg.className = 'chat-message system';
+                welcomeMsg.innerHTML = `
+                    <strong>You're now chatting with ${salesperson.name}</strong><br>
+                    <em>${salesperson.title}</em><br>
+                    <small>"${salesperson.quote}"</small>
+                `;
+                chatMessages.appendChild(welcomeMsg);
+            }
+        }
+
+        // End chat
+        endChatBtn.addEventListener('click', async function() {
+            if (!currentSessionId) return;
+
+            try {
+                const response = await fetch(`/api/chat/end/${currentSessionId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    resetChatInterface();
+                } else {
+                    alert('Failed to end chat.');
+                }
+            } catch (error) {
+                console.error('Error ending chat:', error);
+            }
+        });
+
+        // Reset chat interface
+        function resetChatInterface() {
+            currentSessionId = null;
+            chatStatus.style.display = 'none';
+            chatMessages.style.display = 'none';
+            chatInputArea.style.display = 'none';
+            document.getElementById('officeSelector').style.display = 'block';
+            
+            // Clear messages
+            const systemMessages = chatMessages.querySelectorAll('.chat-message.system');
+            systemMessages.forEach(msg => msg.remove());
+            
+            // Reset form
+            officeSelect.value = '';
+            startChatBtn.disabled = true;
+        }
+
+        // Send message (placeholder - would need WebSocket for real-time)
+        document.getElementById('send-message').addEventListener('click', function() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message && currentSessionId) {
+                // Add message to chat (placeholder implementation)
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'chat-message user';
+                msgDiv.textContent = message;
+                chatMessages.appendChild(msgDiv);
+                
+                input.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // In a real implementation, this would send via WebSocket
+                console.log('Message sent:', message);
+            }
+        });
+
+        // Send message on Enter key
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('send-message').click();
+            }
+        });
+    </script>
+    {% endif %}
 </body>
 </html>
