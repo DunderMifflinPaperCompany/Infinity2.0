@@ -86,7 +86,7 @@ struct ChatStartRequest {
     customer_name: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct ChatStartResponse {
     session_id: Uuid,
     status: String,
@@ -94,7 +94,7 @@ struct ChatStartResponse {
     salesperson: Option<Salesperson>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct ChatEventLog {
     event_type: String,
     session_id: Uuid,
@@ -457,4 +457,422 @@ async fn main() {
     println!("🚀 Dunder Mifflin Infinity 2.0 server running on http://0.0.0.0:3000");
     println!("💬 Chat feature enabled - connecting customers to their favorite salespeople!");
     axum::serve(listener, app).await.unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_initialize_chat_data() {
+        let chat_state = initialize_chat_data();
+        
+        // Test that offices are properly initialized
+        assert_eq!(chat_state.offices.len(), 5);
+        assert_eq!(chat_state.salespeople.len(), 7);
+        assert!(chat_state.sessions.is_empty());
+        
+        // Test specific office data
+        let scranton_office = chat_state.offices.iter()
+            .find(|o| o.id == "scranton")
+            .expect("Scranton office should exist");
+        assert_eq!(scranton_office.name, "Scranton");
+        assert_eq!(scranton_office.location, "Scranton, PA");
+        assert_eq!(scranton_office.available_salespeople.len(), 3);
+        
+        // Test specific salesperson data
+        let michael = chat_state.salespeople.iter()
+            .find(|s| s.id == "michael_scott")
+            .expect("Michael Scott should exist");
+        assert_eq!(michael.name, "Michael Scott");
+        assert_eq!(michael.title, "Regional Manager");
+        assert_eq!(michael.office_id, "scranton");
+        assert_eq!(michael.is_available, true);
+        assert_eq!(michael.quote, "That's what she said!");
+    }
+
+    #[test]
+    fn test_chat_status_enum() {
+        // Test that ChatStatus enum variants can be created
+        let statuses = vec![
+            ChatStatus::Pending,
+            ChatStatus::Connected,
+            ChatStatus::Waiting,
+            ChatStatus::Ended,
+            ChatStatus::Failed,
+        ];
+        
+        assert_eq!(statuses.len(), 5);
+    }
+
+    #[test]
+    fn test_employee_creation() {
+        let employee = Employee {
+            name: "Test Employee".to_string(),
+            title: "Test Title".to_string(),
+            department: "Test Department".to_string(),
+            years_service: 5,
+            photo: "/test/photo.jpg".to_string(),
+            quote: "Test quote".to_string(),
+        };
+        
+        assert_eq!(employee.name, "Test Employee");
+        assert_eq!(employee.years_service, 5);
+    }
+
+    #[test]
+    fn test_news_item_creation() {
+        let news = NewsItem {
+            title: "Test News".to_string(),
+            content: "Test content".to_string(),
+            date: "2024-01-01".to_string(),
+            author: "Test Author".to_string(),
+        };
+        
+        assert_eq!(news.title, "Test News");
+        assert_eq!(news.author, "Test Author");
+    }
+
+    #[test]
+    fn test_office_serialization() {
+        let office = Office {
+            id: "test".to_string(),
+            name: "Test Office".to_string(),
+            location: "Test Location".to_string(),
+            available_salespeople: vec!["person1".to_string(), "person2".to_string()],
+        };
+        
+        // Test that office can be serialized to JSON
+        let serialized = serde_json::to_string(&office);
+        assert!(serialized.is_ok());
+        
+        // Test that it can be deserialized back
+        let json_str = serialized.unwrap();
+        let deserialized: Result<Office, _> = serde_json::from_str(&json_str);
+        assert!(deserialized.is_ok());
+        
+        let deserialized_office = deserialized.unwrap();
+        assert_eq!(deserialized_office.id, "test");
+        assert_eq!(deserialized_office.name, "Test Office");
+    }
+
+    #[test]
+    fn test_salesperson_serialization() {
+        let salesperson = Salesperson {
+            id: "test_id".to_string(),
+            name: "Test Person".to_string(),
+            title: "Test Title".to_string(),
+            office_id: "test_office".to_string(),
+            is_available: true,
+            quote: "Test quote".to_string(),
+        };
+        
+        // Test serialization
+        let serialized = serde_json::to_string(&salesperson);
+        assert!(serialized.is_ok());
+        
+        // Test deserialization
+        let json_str = serialized.unwrap();
+        let deserialized: Result<Salesperson, _> = serde_json::from_str(&json_str);
+        assert!(deserialized.is_ok());
+        
+        let deserialized_person = deserialized.unwrap();
+        assert_eq!(deserialized_person.id, "test_id");
+        assert_eq!(deserialized_person.is_available, true);
+    }
+
+    #[test]
+    fn test_chat_session_creation() {
+        let session_id = Uuid::new_v4();
+        let now = Utc::now();
+        
+        let session = ChatSession {
+            id: session_id,
+            customer_id: Some("test_customer".to_string()),
+            office_id: "scranton".to_string(),
+            salesperson_id: Some("michael_scott".to_string()),
+            status: ChatStatus::Connected,
+            started_at: now,
+            ended_at: None,
+            messages: vec![],
+        };
+        
+        assert_eq!(session.id, session_id);
+        assert_eq!(session.customer_id, Some("test_customer".to_string()));
+        assert_eq!(session.office_id, "scranton");
+        assert!(session.ended_at.is_none());
+        assert!(session.messages.is_empty());
+    }
+
+    #[test]
+    fn test_chat_message_creation() {
+        let message_id = Uuid::new_v4();
+        let timestamp = Utc::now();
+        
+        let message = ChatMessage {
+            id: message_id,
+            sender: "customer".to_string(),
+            content: "Hello, I need help with paper ordering".to_string(),
+            timestamp,
+        };
+        
+        assert_eq!(message.id, message_id);
+        assert_eq!(message.sender, "customer");
+        assert_eq!(message.content, "Hello, I need help with paper ordering");
+    }
+
+    #[test]
+    fn test_chat_config() {
+        let config = ChatConfig {
+            feature_enabled: true,
+            admin_mode: false,
+        };
+        
+        assert_eq!(config.feature_enabled, true);
+        assert_eq!(config.admin_mode, false);
+        
+        // Test clone
+        let cloned_config = config.clone();
+        assert_eq!(cloned_config.feature_enabled, config.feature_enabled);
+        assert_eq!(cloned_config.admin_mode, config.admin_mode);
+    }
+
+    #[test]
+    fn test_chat_state_default() {
+        let chat_state = ChatState::default();
+        
+        assert!(chat_state.sessions.is_empty());
+        assert!(chat_state.offices.is_empty());
+        assert!(chat_state.salespeople.is_empty());
+    }
+
+    #[test]
+    fn test_chat_start_request_serialization() {
+        let request = ChatStartRequest {
+            office_id: "scranton".to_string(),
+            customer_name: Some("John Doe".to_string()),
+        };
+        
+        let serialized = serde_json::to_string(&request);
+        assert!(serialized.is_ok());
+        
+        let json_str = serialized.unwrap();
+        let deserialized: Result<ChatStartRequest, _> = serde_json::from_str(&json_str);
+        assert!(deserialized.is_ok());
+        
+        let deserialized_request = deserialized.unwrap();
+        assert_eq!(deserialized_request.office_id, "scranton");
+        assert_eq!(deserialized_request.customer_name, Some("John Doe".to_string()));
+    }
+
+    #[test]
+    fn test_available_salespeople_by_office() {
+        let chat_state = initialize_chat_data();
+        
+        // Test Scranton office has available salespeople
+        let scranton_available = chat_state.salespeople.iter()
+            .filter(|s| s.office_id == "scranton" && s.is_available)
+            .count();
+        assert_eq!(scranton_available, 3); // Michael, Jim, Dwight
+        
+        // Test Stamford office has some available salespeople
+        let stamford_available = chat_state.salespeople.iter()
+            .filter(|s| s.office_id == "stamford" && s.is_available)
+            .count();
+        assert_eq!(stamford_available, 1); // Only Andy (Karen is unavailable)
+        
+        // Test Buffalo office has no available salespeople
+        let buffalo_available = chat_state.salespeople.iter()
+            .filter(|s| s.office_id == "buffalo" && s.is_available)
+            .count();
+        assert_eq!(buffalo_available, 0); // Todd Packer is unavailable
+    }
+
+    #[test]
+    fn test_office_exists() {
+        let chat_state = initialize_chat_data();
+        
+        // Test existing offices
+        assert!(chat_state.offices.iter().any(|o| o.id == "scranton"));
+        assert!(chat_state.offices.iter().any(|o| o.id == "stamford"));
+        assert!(chat_state.offices.iter().any(|o| o.id == "utica"));
+        assert!(chat_state.offices.iter().any(|o| o.id == "nashua"));
+        assert!(chat_state.offices.iter().any(|o| o.id == "buffalo"));
+        
+        // Test non-existing office
+        assert!(!chat_state.offices.iter().any(|o| o.id == "nonexistent"));
+    }
+
+    #[test]
+    fn test_salesperson_exists() {
+        let chat_state = initialize_chat_data();
+        
+        // Test existing salespeople
+        assert!(chat_state.salespeople.iter().any(|s| s.id == "michael_scott"));
+        assert!(chat_state.salespeople.iter().any(|s| s.id == "jim_halpert"));
+        assert!(chat_state.salespeople.iter().any(|s| s.id == "dwight_schrute"));
+        
+        // Test non-existing salesperson
+        assert!(!chat_state.salespeople.iter().any(|s| s.id == "nonexistent"));
+    }
+
+    #[test]
+    fn test_uuid_generation() {
+        let uuid1 = Uuid::new_v4();
+        let uuid2 = Uuid::new_v4();
+        
+        // UUIDs should be different
+        assert_ne!(uuid1, uuid2);
+        
+        // UUIDs should be valid format
+        assert_eq!(uuid1.to_string().len(), 36);
+        assert_eq!(uuid2.to_string().len(), 36);
+    }
+
+    // Integration tests for async handlers
+    mod integration_tests {
+        use super::*;
+        use axum_test::TestServer;
+
+        fn create_test_app() -> Router {
+            let chat_state = Arc::new(Mutex::new(initialize_chat_data()));
+            let config = ChatConfig {
+                feature_enabled: true,
+                admin_mode: false,
+            };
+
+            // Create a minimal Tera instance for testing
+            let mut tera = Tera::default();
+            tera.add_raw_template("index.html", "Test template").unwrap();
+
+            let app_state = AppState { 
+                tera: Arc::new(tera), 
+                chat_state,
+                config,
+            };
+
+            Router::new()
+                .route("/api/chat/start", post(start_chat))
+                .route("/api/chat/end/:session_id", post(end_chat))
+                .route("/api/offices", get(get_offices))
+                .with_state(app_state)
+        }
+
+        #[tokio::test]
+        async fn test_get_offices_endpoint() {
+            let app = create_test_app();
+            let server = TestServer::new(app).unwrap();
+
+            let response = server.get("/api/offices").await;
+            assert_eq!(response.status_code(), 200);
+
+            let offices: Vec<Office> = response.json();
+            assert_eq!(offices.len(), 5);
+            assert!(offices.iter().any(|o| o.id == "scranton"));
+        }
+
+        #[tokio::test]
+        async fn test_start_chat_endpoint() {
+            let app = create_test_app();
+            let server = TestServer::new(app).unwrap();
+
+            let request = ChatStartRequest {
+                office_id: "scranton".to_string(),
+                customer_name: Some("Test Customer".to_string()),
+            };
+
+            let response = server.post("/api/chat/start")
+                .json(&request)
+                .await;
+
+            assert_eq!(response.status_code(), 200);
+
+            let chat_response: ChatStartResponse = response.json();
+            assert_eq!(chat_response.status, "connected");
+            assert!(chat_response.salesperson.is_some());
+        }
+
+        #[tokio::test]
+        async fn test_start_chat_invalid_office() {
+            let app = create_test_app();
+            let server = TestServer::new(app).unwrap();
+
+            let request = ChatStartRequest {
+                office_id: "nonexistent".to_string(),
+                customer_name: Some("Test Customer".to_string()),
+            };
+
+            let response = server.post("/api/chat/start")
+                .json(&request)
+                .await;
+
+            assert_eq!(response.status_code(), 400);
+        }
+
+        #[tokio::test]
+        async fn test_end_chat_endpoint() {
+            let app = create_test_app();
+            let server = TestServer::new(app).unwrap();
+
+            // First start a chat
+            let start_request = ChatStartRequest {
+                office_id: "scranton".to_string(),
+                customer_name: Some("Test Customer".to_string()),
+            };
+
+            let start_response = server.post("/api/chat/start")
+                .json(&start_request)
+                .await;
+
+            let chat_response: ChatStartResponse = start_response.json();
+            let session_id = chat_response.session_id;
+
+            // Then end the chat
+            let end_response = server.post(&format!("/api/chat/end/{}", session_id))
+                .await;
+
+            assert_eq!(end_response.status_code(), 200);
+            let message: String = end_response.json();
+            assert_eq!(message, "Chat ended successfully");
+        }
+
+        #[tokio::test]
+        async fn test_end_chat_nonexistent_session() {
+            let app = create_test_app();
+            let server = TestServer::new(app).unwrap();
+
+            let fake_session_id = Uuid::new_v4();
+            let response = server.post(&format!("/api/chat/end/{}", fake_session_id))
+                .await;
+
+            assert_eq!(response.status_code(), 404);
+        }
+
+        #[tokio::test]
+        async fn test_feature_disabled() {
+            let chat_state = Arc::new(Mutex::new(initialize_chat_data()));
+            let config = ChatConfig {
+                feature_enabled: false, // Disable feature
+                admin_mode: false,
+            };
+
+            let mut tera = Tera::default();
+            tera.add_raw_template("index.html", "Test template").unwrap();
+
+            let app_state = AppState { 
+                tera: Arc::new(tera), 
+                chat_state,
+                config,
+            };
+
+            let app = Router::new()
+                .route("/api/offices", get(get_offices))
+                .with_state(app_state);
+
+            let server = TestServer::new(app).unwrap();
+
+            let response = server.get("/api/offices").await;
+            assert_eq!(response.status_code(), 503); // Service Unavailable
+        }
+    }
 }
